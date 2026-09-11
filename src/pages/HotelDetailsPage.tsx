@@ -350,25 +350,47 @@ export const HotelDetailsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Progress bars */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                {[
-                  { label: 'Cleanliness', score: 9.5 },
-                  { label: 'Location & Surroundings', score: 9.4 },
-                  { label: 'Staff & Hospitality', score: 9.3 },
-                  { label: 'Value for Money', score: 9.1 }
-                ].map((item, idx) => (
-                  <div key={idx}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.2rem' }}>
-                      <span>{item.label}</span>
-                      <span>{item.score} / 10</span>
+              {/* Review metrics computed dynamically from API reviews */}
+              {(() => {
+                const reviews = hotel.reviews || [];
+                const calcAvg = (key: 'cleanlinessRating' | 'locationRating' | 'serviceRating' | 'valueRating') => {
+                  const rated = reviews.filter((r) => typeof r[key] === 'number' && (r[key] as number) > 0);
+                  if (rated.length === 0) return null;
+                  const total = rated.reduce((sum, r) => sum + (r[key] as number), 0);
+                  return parseFloat((total / rated.length).toFixed(1));
+                };
+
+                const categories = [
+                  { label: 'Cleanliness', score: calcAvg('cleanlinessRating') },
+                  { label: 'Location & Surroundings', score: calcAvg('locationRating') },
+                  { label: 'Staff & Hospitality', score: calcAvg('serviceRating') },
+                  { label: 'Value for Money', score: calcAvg('valueRating') }
+                ].filter((cat): cat is { label: string; score: number } => cat.score !== null);
+
+                if (categories.length > 0) {
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                      {categories.map((item, idx) => (
+                        <div key={idx}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                            <span>{item.label}</span>
+                            <span>{item.score} / 10</span>
+                          </div>
+                          <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${item.score * 10}%`, height: '100%', backgroundColor: '#4f46e5', borderRadius: '3px' }}></div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${item.score * 10}%`, height: '100%', backgroundColor: '#4f46e5', borderRadius: '3px' }}></div>
-                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ padding: '0.5rem 0 1.25rem 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Verified guest rating: <strong>{hotel.averageRating.toFixed(1)} / 10</strong> from {hotel.reviewCount} reviews.
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               <button
                 onClick={() => setIsReviewModalOpen(true)}

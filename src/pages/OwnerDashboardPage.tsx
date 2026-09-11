@@ -173,10 +173,10 @@ export const OwnerDashboardPage: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {stats?.totalBookings || 48}
+              {stats?.totalBookings ?? bookings.length}
             </div>
             <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
-              ↑ 14% vs previous month
+              {stats?.todayBookings ?? 0} check-ins today
             </span>
           </div>
 
@@ -188,7 +188,7 @@ export const OwnerDashboardPage: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {formatINR(stats?.totalRevenue ?? 184500)}
+              {formatINR(stats?.totalRevenue ?? 0)}
             </div>
             <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
               Direct payouts processed (INR)
@@ -203,10 +203,10 @@ export const OwnerDashboardPage: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {stats?.occupancyRate || 78.5}%
+              {stats?.occupancyRate !== undefined ? `${stats.occupancyRate.toFixed(1)}%` : '0%'}
             </div>
             <span style={{ fontSize: '0.75rem', color: '#0ea5e9', fontWeight: 600 }}>
-              Peak weekend capacity: 94%
+              Property room occupancy
             </span>
           </div>
 
@@ -218,10 +218,10 @@ export const OwnerDashboardPage: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              {stats?.averageRating ? stats.averageRating.toFixed(1) : '9.3'} / 10
+              {stats?.averageRating !== undefined && stats.averageRating > 0 ? `${stats.averageRating.toFixed(1)} / 10` : '0.0 / 10'}
             </div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Excellent hospitality tier
+              Verified guest feedback
             </span>
           </div>
         </div>

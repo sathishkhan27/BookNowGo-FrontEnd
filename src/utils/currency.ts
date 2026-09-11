@@ -41,6 +41,8 @@ export function calculateINRFare(params: {
   discountPercentage?: number;
   couponDiscount?: number;
   couponCode?: string;
+  taxPercentage?: number;
+  serviceFeePercentage?: number;
 }): FareBreakdown {
   const {
     basePricePerNight,
@@ -49,7 +51,9 @@ export function calculateINRFare(params: {
     roomsCount = 1,
     discountPercentage = 0,
     couponDiscount = 0,
-    couponCode
+    couponCode,
+    taxPercentage = 12,
+    serviceFeePercentage = 5
   } = params;
 
   // Calculate nights safely
@@ -67,13 +71,8 @@ export function calculateINRFare(params: {
 
   const taxableAmount = Math.max(0, totalRoomBasePrice - promotionalDiscount - effectiveCouponDiscount);
   
-  // 12% GST standard for hotel rooms in India
-  const taxPercentage = 12;
-  const taxAmount = Math.round(taxableAmount * 0.12);
-
-  // 5% platform / concierge fee
-  const serviceFeePercentage = 5;
-  const serviceFee = Math.round(taxableAmount * 0.05);
+  const taxAmount = Math.round(taxableAmount * (taxPercentage / 100));
+  const serviceFee = Math.round(taxableAmount * (serviceFeePercentage / 100));
 
   const finalTotalAmount = taxableAmount + taxAmount + serviceFee;
 

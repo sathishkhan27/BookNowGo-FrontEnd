@@ -64,30 +64,39 @@ export const CheckoutPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const calculatedNights = Math.max(1, Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)));
+
   useEffect(() => {
     if (!room) return;
     setCalculatingFare(true);
 
-    // Dynamic INR Calculation
-    const effectiveBasePrice = room.discountedPrice || room.basePrice;
-    const computedLocalFare = calculateINRFare({
-      basePricePerNight: effectiveBasePrice,
-      checkIn,
-      checkOut,
-      roomsCount,
-      discountPercentage: room.discountPercentage || 0,
-      couponDiscount: appliedCoupon ? 1000 : 0,
-      couponCode: appliedCoupon || undefined
-    });
-    setFare(computedLocalFare);
-
     searchApi.getFarePreview(room.id, checkIn, checkOut, roomsCount, appliedCoupon || undefined)
       .then((data) => {
-        if (data && data.finalTotalAmount) {
+        if (data && data.finalTotalAmount !== undefined) {
           setFare(data);
         }
       })
-      .catch((err) => console.log('Using dynamic client INR fare:', err))
+      .catch((err) => {
+        console.warn('Backend fare preview error:', err);
+        const effectiveBasePrice = room.discountedPrice || room.basePrice;
+        const totalBase = effectiveBasePrice * calculatedNights * roomsCount;
+        setFare({
+          currency: 'INR',
+          basePricePerNight: effectiveBasePrice,
+          numberOfNights: calculatedNights,
+          numberOfRooms: roomsCount,
+          totalRoomBasePrice: totalBase,
+          discountAmount: 0,
+          couponCode: appliedCoupon || undefined,
+          couponDiscount: 0,
+          taxableAmount: totalBase,
+          taxPercentage: 0,
+          taxAmount: 0,
+          serviceFeePercentage: 0,
+          serviceFee: 0,
+          finalTotalAmount: totalBase
+        });
+      })
       .finally(() => setCalculatingFare(false));
   }, [room, checkIn, checkOut, roomsCount, appliedCoupon]);
 
@@ -108,7 +117,7 @@ export const CheckoutPage: React.FC = () => {
     if (!couponInput.trim()) return;
 
     try {
-      const val = await couponApi.validate(couponInput.trim(), fare?.totalRoomBasePrice || 100);
+      const val = await couponApi.validate(couponInput.trim(), fare?.totalRoomBasePrice || room.basePrice);
       if (val.valid) {
         setAppliedCoupon(couponInput.trim().toUpperCase());
         setCouponMessage(val.message);
@@ -425,7 +434,7 @@ export const CheckoutPage: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Duration:</span>
-                  <strong>{fare?.numberOfNights || 2} Nights, {roomsCount} Room</strong>
+                  <strong>{fare?.numberOfNights ?? calculatedNights} Nights, {roomsCount} Room</strong>
                 </div>
               </div>
 
@@ -468,31 +477,31 @@ export const CheckoutPage: React.FC = () => {
               {/* Price Breakdown */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Room Price ({fare?.numberOfNights} nights x {roomsCount} room):</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Room Price ({fare?.numberOfNights ?? calculatedNights} nights x {roomsCount} room):</span>
                   <span>{formatINR(fare?.totalRoomBasePrice)}</span>
                 </div>
 
-                {fare?.discountAmount && fare.discountAmount > 0 && (
+                {fare?.discountAmount && fare.discountAmount > 0 ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
                     <span>Promotional Room Discount:</span>
                     <span>-{formatINR(fare.discountAmount)}</span>
                   </div>
-                )}
+                ) : null}
 
-                {fare?.couponDiscount && fare.couponDiscount > 0 && (
+                {fare?.couponDiscount && fare.couponDiscount > 0 ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e11d48', fontWeight: 600 }}>
                     <span>Coupon Voucher ({appliedCoupon}):</span>
                     <span>-{formatINR(fare.couponDiscount)}</span>
                   </div>
-                )}
+                ) : null}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                  <span>Taxes & GST (12%):</span>
+                  <span>Taxes & GST{fare?.taxPercentage ? ` (${fare.taxPercentage}%)` : ''}:</span>
                   <span>{formatINR(fare?.taxAmount)}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                  <span>Service & Concierge Fee (5%):</span>
+                  <span>Service & Concierge Fee{fare?.serviceFeePercentage ? ` (${fare.serviceFeePercentage}%)` : ''}:</span>
                   <span>{formatINR(fare?.serviceFee)}</span>
                 </div>
 

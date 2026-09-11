@@ -87,37 +87,37 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="bng-card" style={{ padding: '1.25rem' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Platform Users</span>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0' }}>
-              {stats?.totalUsers || 24}
+              {stats?.totalUsers ?? users.length}
             </div>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-              {stats?.totalCustomers || 18} Customers • {stats?.totalOwners || 5} Owners
+              {stats?.totalCustomers ?? 0} Customers • {stats?.totalOwners ?? 0} Owners
             </span>
           </div>
 
           <div className="bng-card" style={{ padding: '1.25rem' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Listed Properties</span>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0' }}>
-              {stats?.totalHotels || 8}
+              {stats?.totalHotels ?? 0}
             </div>
             <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600 }}>
-              {stats?.pendingHotelApprovals || 0} pending review
+              {stats?.pendingHotelApprovals ?? 0} pending review
             </span>
           </div>
 
           <div className="bng-card" style={{ padding: '1.25rem' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Gross Bookings Volume</span>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: '0.2rem 0' }}>
-              {formatINR(stats?.totalGrossBookingsAmount ?? 342500)}
+              {formatINR(stats?.totalGrossBookingsAmount ?? 0)}
             </div>
             <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600 }}>
-              {stats?.totalBookings || 52} completed bookings
+              {stats?.totalBookings ?? bookings.length} completed bookings
             </span>
           </div>
 
           <div className="bng-card" style={{ padding: '1.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Platform Commission (15%)</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Platform Commission</span>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#4f46e5', margin: '0.2rem 0' }}>
-              {formatINR(stats?.totalPlatformCommission ?? 51375)}
+              {formatINR(stats?.totalPlatformCommission ?? 0)}
             </div>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
               Net marketplace take
@@ -167,21 +167,25 @@ export const AdminDashboardPage: React.FC = () => {
               </p>
 
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '200px', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                {stats?.bookingTrends.map((point) => {
-                  const barHeight = Math.round((point.bookings / 300) * 160);
-                  return (
-                    <div key={point.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{point.bookings}</span>
-                      <div style={{
-                        width: '24px',
-                        height: `${barHeight}px`,
-                        background: 'linear-gradient(to top, #4f46e5, #38bdf8)',
-                        borderRadius: '6px'
-                      }}></div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{point.month}</span>
-                    </div>
-                  );
-                })}
+                {(() => {
+                  const trends = stats?.bookingTrends || [];
+                  const maxVal = Math.max(...trends.map((p) => p.bookings), 1);
+                  return trends.map((point) => {
+                    const barHeight = Math.round((point.bookings / maxVal) * 160);
+                    return (
+                      <div key={point.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{point.bookings}</span>
+                        <div style={{
+                          width: '24px',
+                          height: `${barHeight}px`,
+                          background: 'linear-gradient(to top, #4f46e5, #38bdf8)',
+                          borderRadius: '6px'
+                        }}></div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{point.month}</span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 

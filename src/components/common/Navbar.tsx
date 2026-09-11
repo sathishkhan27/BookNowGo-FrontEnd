@@ -306,7 +306,7 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Link
                 to="/login"
                 className="btn btn-primary btn-sm"
@@ -314,12 +314,50 @@ export const Navbar: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  backgroundColor: '#0f172a',
-                  borderColor: '#0f172a'
+                  padding: '0.45rem 0.95rem'
                 }}
               >
-                <ShieldCheck size={15} color="#38bdf8" />
-                <span>Admin Login</span>
+                <User size={15} />
+                <span>Sign In</span>
+              </Link>
+
+              <Link
+                to="/register"
+                className="hide-on-mobile"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: 'var(--text-main)',
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <span>Register</span>
+              </Link>
+
+              <Link
+                to="/login?role=admin"
+                title="Admin & Host Portal"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  fontSize: '0.78rem',
+                  color: '#64748b',
+                  padding: '0.4rem 0.6rem',
+                  borderRadius: '8px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid var(--border)',
+                  fontWeight: 600
+                }}
+              >
+                <ShieldCheck size={14} color="#0ea5e9" />
+                <span className="hide-on-mobile">Admin</span>
               </Link>
             </div>
           )}
