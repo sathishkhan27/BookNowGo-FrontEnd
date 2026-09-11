@@ -19,7 +19,9 @@ import {
 } from '../types';
 import { loadingManager } from '../utils/loadingManager';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
+const API_ORIGIN = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/$/, '')
+  : 'https://booknowgo-backend.onrender.com';
 const BASE_URL = `${API_ORIGIN}/api/v1`;
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
