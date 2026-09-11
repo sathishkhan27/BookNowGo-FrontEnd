@@ -249,8 +249,9 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       proxy: {
         '/api': {
-          target: 'http://localhost:8080',
+          target: env.VITE_API_URL || 'https://booknowgo-backend.onrender.com',
           changeOrigin: true,
+          secure: false,
           bypass(req) {
             if (req.url?.startsWith('/api/v1/storage')) {
               return req.url;
