@@ -414,7 +414,7 @@ export const CheckoutPage: React.FC = () => {
                     {hotel.name}
                   </h4>
                   <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                    {hotel.city}, {hotel.country}
+                    {[hotel.city, hotel.country].filter(Boolean).join(', ')}
                   </p>
                   <span className="badge badge-indigo" style={{ fontSize: '0.7rem' }}>
                     {room.name} ({room.roomType})

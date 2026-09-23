@@ -270,7 +270,7 @@ export const OwnerDashboardPage: React.FC = () => {
                         {h.name}
                       </h4>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                        {h.city} • from {formatINR(h.startingPrice)}/nt
+                        {h.city || h.address || 'No location'} • from {formatINR(h.startingPrice)}/nt
                       </span>
                       <span style={{ fontSize: '0.7rem', color: h.status === 'APPROVED' ? '#059669' : '#d97706', fontWeight: 600 }}>
                         ● {h.status}

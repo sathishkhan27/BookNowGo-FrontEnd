@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { HotelDetail, Hotel } from '../../types';
-import { ownerApi } from '../../api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { HotelDetail, Hotel, Location } from '../../types';
+import { ownerApi, locationApi } from '../../api/client';
 import { ImageUploader } from '../common/ImageUploader';
-import { X, Save, Image, Plus, Trash2, CheckCircle2, Star } from 'lucide-react';
+import { X, Save, Image, Plus, Trash2, CheckCircle2, Star, MapPin } from 'lucide-react';
 
 interface EditHotelModalProps {
   hotel: Hotel | HotelDetail;
@@ -49,19 +49,62 @@ export const EditHotelModal: React.FC<EditHotelModalProps> = ({
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(hotel.amenities || []);
   const [submitting, setSubmitting] = useState(false);
 
+  // Location search (optional override)
+  const [locationQuery, setLocationQuery] = useState('');
+  const [locationResults, setLocationResults] = useState<Location[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [locationId, setLocationId] = useState<number | null>(null);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const locationSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (locationSearchTimeout.current) clearTimeout(locationSearchTimeout.current);
+    if (!locationQuery.trim()) {
+      setLocationResults([]);
+      setShowLocationDropdown(false);
+      return;
+    }
+    locationSearchTimeout.current = setTimeout(async () => {
+      try {
+        const results = await locationApi.search(locationQuery);
+        setLocationResults(results);
+        setShowLocationDropdown(results.length > 0);
+      } catch {
+        setLocationResults([]);
+      }
+    }, 300);
+    return () => { if (locationSearchTimeout.current) clearTimeout(locationSearchTimeout.current); };
+  }, [locationQuery]);
+
+  const handleSelectLocation = (loc: Location) => {
+    setSelectedLocation(loc);
+    setLocationId(loc.id);
+    setLocationQuery(`${loc.city}${loc.state ? ', ' + loc.state : ''}, ${loc.country}`);
+    setShowLocationDropdown(false);
+    setCity(loc.city);
+    if (loc.state) setState(loc.state);
+    setCountry(loc.country);
+    if (loc.landmark) setLandmark(loc.landmark);
+  };
+
   useEffect(() => {
     setName(hotel.name);
     setDescription(hotel.description || '');
     setStarRating(hotel.starRating || 5);
     setStartingPrice(hotel.startingPrice || 8000);
     setAddress(hotel.address);
-    setCity(hotel.city);
+    setCity(hotel.city || '');
     setState(hotel.state || '');
-    setCountry(hotel.country);
+    setCountry(hotel.country || '');
     setLandmark(hotel.landmark || '');
     setPrimaryImageUrl(hotel.primaryImageUrl);
     setImages(hotel.images?.length ? hotel.images : [hotel.primaryImageUrl]);
     setSelectedAmenities(hotel.amenities || []);
+    // Reset location search override
+    setLocationQuery('');
+    setSelectedLocation(null);
+    setLocationId(null);
+    setShowLocationDropdown(false);
   }, [hotel]);
 
   if (!isOpen) return null;
@@ -109,7 +152,7 @@ export const EditHotelModal: React.FC<EditHotelModalProps> = ({
         ? images
         : [primaryImageUrl, ...images];
 
-      const payload = {
+      const payload: any = {
         name,
         description,
         starRating,
@@ -121,7 +164,9 @@ export const EditHotelModal: React.FC<EditHotelModalProps> = ({
         landmark,
         primaryImageUrl,
         images: finalImages,
-        amenities: selectedAmenities
+        amenities: selectedAmenities,
+        // Only include locationId if the user picked a new location
+        ...(locationId ? { locationId } : {})
       };
 
       await ownerApi.updateHotel(hotel.id, payload);
@@ -309,6 +354,69 @@ export const EditHotelModal: React.FC<EditHotelModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               style={{ width: '100%' }}
             />
+          </div>
+
+          {/* Location Search (optional override) */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, marginBottom: '0.3rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <MapPin size={14} color="#4f46e5" /> Change Location (optional)
+              </span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder={`Current: ${hotel.city || ''}${hotel.state ? ', ' + hotel.state : ''}${hotel.country ? ', ' + hotel.country : ''} — search to change`}
+                value={locationQuery}
+                onChange={(e) => { setLocationQuery(e.target.value); setSelectedLocation(null); setLocationId(null); }}
+                style={{ width: '100%', borderColor: selectedLocation ? '#10b981' : undefined }}
+                autoComplete="off"
+              />
+              {selectedLocation && (
+                <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '0.75rem', fontWeight: 700, pointerEvents: 'none' }}>
+                  ✓ Changed
+                </span>
+              )}
+              {showLocationDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  zIndex: 100,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {locationResults.map((loc) => (
+                    <div
+                      key={loc.id}
+                      onClick={() => handleSelectLocation(loc)}
+                      style={{
+                        padding: '0.6rem 0.9rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        borderBottom: '1px solid #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                    >
+                      <MapPin size={13} color="#94a3b8" />
+                      <span><strong>{loc.city}</strong>{loc.state ? `, ${loc.state}` : ''}, {loc.country}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Leave blank to keep the current location. City/State/Country below will auto-fill on selection.
+            </p>
           </div>
 
           {/* Location */}
