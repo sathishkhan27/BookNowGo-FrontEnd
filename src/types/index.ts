@@ -50,9 +50,9 @@ export interface Hotel {
   averageRating: number;
   reviewCount: number;
   address: string;
-  city: string;
+  city?: string;
   state?: string;
-  country: string;
+  country?: string;
   area?: string;
   landmark?: string;
   latitude?: number;

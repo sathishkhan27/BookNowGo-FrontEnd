@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ownerApi } from '../../api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { ownerApi, locationApi } from '../../api/client';
+import { Location } from '../../types';
 import { ImageUploader } from '../common/ImageUploader';
-import { X, Plus, Trash2, Building2, Image, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, Building2, Image, MapPin } from 'lucide-react';
 
 interface CreateHotelModalProps {
   isOpen: boolean;
@@ -43,6 +44,14 @@ export const CreateHotelModal: React.FC<CreateHotelModalProps> = ({
   const [freeCancellation, setFreeCancellation] = useState(true);
   const [cancellationPolicy, setCancellationPolicy] = useState('Free cancellation up to 24 hours prior to check-in date.');
 
+  // Location search
+  const [locationQuery, setLocationQuery] = useState('');
+  const [locationResults, setLocationResults] = useState<Location[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [locationId, setLocationId] = useState<number | null>(null);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const locationSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Images
   const [primaryImageUrl, setPrimaryImageUrl] = useState('');
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
@@ -52,6 +61,38 @@ export const CreateHotelModal: React.FC<CreateHotelModalProps> = ({
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (locationSearchTimeout.current) clearTimeout(locationSearchTimeout.current);
+    if (!locationQuery.trim()) {
+      setLocationResults([]);
+      setShowLocationDropdown(false);
+      return;
+    }
+    locationSearchTimeout.current = setTimeout(async () => {
+      try {
+        const results = await locationApi.search(locationQuery);
+        setLocationResults(results);
+        setShowLocationDropdown(results.length > 0);
+      } catch {
+        setLocationResults([]);
+      }
+    }, 300);
+    return () => { if (locationSearchTimeout.current) clearTimeout(locationSearchTimeout.current); };
+  }, [locationQuery]);
+
+  const handleSelectLocation = (loc: Location) => {
+    setSelectedLocation(loc);
+    setLocationId(loc.id);
+    setLocationQuery(`${loc.city}${loc.state ? ', ' + loc.state : ''}, ${loc.country}`);
+    setShowLocationDropdown(false);
+    // Auto-fill city / state / country
+    setCity(loc.city);
+    if (loc.state) setState(loc.state);
+    setCountry(loc.country);
+    if (loc.area) setArea(loc.area);
+    if (loc.landmark) setLandmark(loc.landmark);
+  };
 
   if (!isOpen) return null;
 
@@ -78,6 +119,10 @@ export const CreateHotelModal: React.FC<CreateHotelModalProps> = ({
     e.preventDefault();
     if (!name.trim() || !primaryImageUrl.trim()) {
       alert('Please provide a property name and primary photo URL');
+      return;
+    }
+    if (!locationId) {
+      alert('Please search and select a location for your property');
       return;
     }
 
@@ -111,7 +156,8 @@ export const CreateHotelModal: React.FC<CreateHotelModalProps> = ({
         originalPrice: Number(startingPrice) ? Math.round(Number(startingPrice) * 1.2) : 0,
         discountPercentage: Number(startingPrice) ? 15 : 0,
         freeCancellation,
-        cancellationPolicy
+        cancellationPolicy,
+        locationId
       };
 
       await ownerApi.createHotel(payload);
@@ -185,6 +231,69 @@ export const CreateHotelModal: React.FC<CreateHotelModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               style={{ width: '100%' }}
             />
+          </div>
+
+          {/* Location Search */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, marginBottom: '0.3rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <MapPin size={14} color="#4f46e5" /> Location (City / Destination) *
+              </span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Search city, e.g. Goa, Mumbai, Jaipur…"
+                value={locationQuery}
+                onChange={(e) => { setLocationQuery(e.target.value); setSelectedLocation(null); setLocationId(null); }}
+                style={{ width: '100%', borderColor: selectedLocation ? '#10b981' : undefined }}
+                autoComplete="off"
+              />
+              {selectedLocation && (
+                <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '0.75rem', fontWeight: 700, pointerEvents: 'none' }}>
+                  ✓ Selected
+                </span>
+              )}
+              {showLocationDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  zIndex: 100,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {locationResults.map((loc) => (
+                    <div
+                      key={loc.id}
+                      onClick={() => handleSelectLocation(loc)}
+                      style={{
+                        padding: '0.6rem 0.9rem',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        borderBottom: '1px solid #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f4ff')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                    >
+                      <MapPin size={13} color="#94a3b8" />
+                      <span><strong>{loc.city}</strong>{loc.state ? `, ${loc.state}` : ''}, {loc.country}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Type to search registered destinations. City/State/Country will be auto-filled after selection.
+            </p>
           </div>
 
           {/* Location Fields */}

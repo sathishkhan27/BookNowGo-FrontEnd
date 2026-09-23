@@ -82,7 +82,7 @@ export const HotelDetailsPage: React.FC = () => {
         <div className="bng-container" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           <Link to="/" style={{ color: 'var(--text-muted)' }}>Home</Link>
           <ChevronRight size={13} />
-          <Link to={`/search?query=${encodeURIComponent(hotel.city)}`} style={{ color: 'var(--text-muted)' }}>{hotel.city}</Link>
+          <Link to={`/search?query=${encodeURIComponent(hotel.city || hotel.name)}`} style={{ color: 'var(--text-muted)' }}>{hotel.city || hotel.name}</Link>
           <ChevronRight size={13} />
           <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{hotel.name}</span>
         </div>
@@ -112,7 +112,7 @@ export const HotelDetailsPage: React.FC = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
               <MapPin size={16} color="#4f46e5" />
-              <span>{hotel.address}, {hotel.area ? `${hotel.area}, ` : ''}{hotel.city}, {hotel.country}</span>
+              <span>{hotel.address}{hotel.area ? `, ${hotel.area}` : ''}{hotel.city ? `, ${hotel.city}` : ''}{hotel.country ? `, ${hotel.country}` : ''}</span>
               {hotel.landmark && <span style={{ color: '#0ea5e9' }}>• Near {hotel.landmark}</span>}
             </div>
           </div>
